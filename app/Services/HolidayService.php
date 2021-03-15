@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use DateTime;
+
 class HolidayService {
 
     public $holidays = [];
@@ -11,38 +13,86 @@ class HolidayService {
         $this->holidays = [
         [
             'name' => 'Thanksgiving',
-            'till' => strtotime('Thursday 4 week November'),
-            'from' => strtotime('Thursday 4 week November'),
+            'till' => [
+                'day' => 1,
+                'month' => 11
+            ],
+            'from' => [
+                'day' => 1,
+                'month' => 11
+            ],
+            'is_calculated' => true,
+            'week_num' => 4,
+            'day_num' => 3,
             'description' => 'Thursday of the 4th week of November'
         ],
         [
             'name' => 'New year',
-            'till' => strtotime('1st January'),
-            'from' => strtotime('1st January'),
+            'till' => [
+                'day' => 1,
+                'month' => 1
+            ],
+            'from' => [
+                'day' => 1,
+                'month' => 1
+            ],
+            'is_calculated' => false,
             'description' => '1st of January'
         ],
         [
             'name' => 'Orthodox Christmas',
-            'till' => strtotime('7th January'),
-            'from' => strtotime('7th January'),
+            'till' => [
+                'day' => 7,
+                'month' => 1
+            ],
+            'from' => [
+                'day' => 7,
+                'month' => 1
+            ],
+            'is_calculated' => false,
             'description' => '7th of January'
         ],
         [
             'name' => 'May holidays',
-            'till' => strtotime('1st May'),
-            'from' => strtotime('7th May'),
+            'till' => [
+                'day' => 1,
+                'month' => 5
+            ],
+            'from' => [
+                'day' => 7,
+                'month' => 5
+            ],
+            'is_calculated' => false,
             'description' => 'From 1st of May till 7th of May'
         ],
         [
             'name' => 'Birthday of Martin Luther King',
-            'till' => strtotime('Monday 3 week January'),
-            'from' => strtotime('Monday 3 week January'),
+            'till' => [
+                'day' => 1,
+                'month' => 1
+            ],
+            'from' => [
+                'day' => 1,
+                'month' => 1
+            ],
+            'week_num' => 3,
+            'day_num' => 2,
+            'is_calculated' => true,
             'description' => 'Monday of the 3rd week of January'
         ],
         [
             'name' => 'World Water Day',
-            'till' => strtotime('Monday last week March'),
-            'from' => strtotime('Monday last week March'),
+            'till' => [
+                'day' => 1,
+                'month' => 3
+            ],
+            'from' => [
+                'day' => 1,
+                'month' => 3
+            ],
+            'week_num' => 4,
+            'day_num' => 2,
+            'is_calculated' => true,
             'description' => 'Monday of the last week of March'
         ]
     ];
@@ -52,10 +102,47 @@ class HolidayService {
      * @param $date
      * @return array
      */
-    function getHolidays($date): array
+    public function getHolidays($date): array
     {
         return array_filter($this->holidays, function ($item) use ($date) {
-            return $item['from'] >= strtotime($date) && $item['till'] <= strtotime($date);
+            $year = $this->getYear($date);
+
+            $from = $item['is_calculated'] ?
+                $this->calculateTimeStamp($year, $item['from']['month'], $item['week_num'], $item['day_num'] ) :
+                strtotime($item['from']['month'] .'/'. $item['from']['day'] .'/'. $year);
+
+            $till = $item['is_calculated'] ?
+                $this->calculateTimeStamp($year, $item['till']['month'], $item['week_num'], $item['day_num']) :
+                strtotime($item['till']['month'] .'/'. $item['till']['day'] .'/'. $year);
+
+            return $from >= strtotime($date) && $till <= strtotime($date);
         });
+    }
+
+
+    /**
+     * @param int $year
+     * @param int $month
+     * @param int $weekNum
+     * @param int $dayNumber
+     * @return int
+     */
+    private function calculateTimeStamp($year = 1, $month = 1, $weekNum = 1, $dayNumber = 1): int
+    {
+        $weekLength = 7;
+        $number = $dayNumber + ($weekNum - 1) * $weekLength;
+
+        $firstDayWeekIndex = (new DateTime("$year-$month-1 0:0:0"))->format('w');
+
+        return strtotime((new DateTime)->setDate($year, $month, $number - $firstDayWeekIndex)->format('d-m-Y'));
+    }
+
+    /**
+     * @param $date
+     * @return string
+     */
+    private function getYear($date): string
+    {
+        return explode('.', $date)[2];
     }
 }
